@@ -13,7 +13,7 @@ import {
 
 /* =============================
    NailVault — Single-file React app
-   Mobile-first, colorful, localStorage-backed
+   Mobile-first, colorful, localStorage + optional Firebase sync
    ============================= */
 
 /* ---------- Helpers ---------- */
@@ -119,7 +119,7 @@ function lighten(hex, amt = 0.2) {
 }
 function darken(hex, amt = 0.2) {
   const [r, g, b] = hexToRgb(hex);
-  const f = (x) => Math.max(0, Math.min(255, Math.round(x * (1 - amt))));
+  const f = (x) => Math.max(0, Math.min(255, Math.round(x * (1 - amt)))) ;
   return `rgb(${f(r)}, ${f(g)}, ${f(b)})`;
 }
 function finishStyle(baseHex = "#ddd", finish = "cream") {
@@ -127,21 +127,76 @@ function finishStyle(baseHex = "#ddd", finish = "cream") {
   const light = lighten(base, 0.35);
   const dark = darken(base, 0.35);
   switch (String(finish || "").toLowerCase()) {
-    case "metallic": return { background: base, backgroundImage: `linear-gradient(115deg, ${rgba("#ffffff", 0.5)}, transparent 30%), linear-gradient(295deg, ${rgba("#000000", 0.18)}, transparent 40%), linear-gradient(45deg, ${rgba("#ffffff", 0.25)}, transparent 60%)`, backgroundBlendMode: "screen, multiply, screen" };
-    case "shimmer": return { background: base, backgroundImage: `radial-gradient(circle at 20% 30%, ${rgba("#ffffff", 0.25)} 0 25%, transparent 26%), radial-gradient(circle at 70% 60%, ${rgba("#ffffff", 0.18)} 0 18%, transparent 19%)`, backgroundSize: "24px 24px, 28px 28px", backgroundRepeat: "repeat" };
-    case "glitter": return { background: base, backgroundImage: `radial-gradient(${rgba("#ffffff", 0.85)} 1px, transparent 1.5px), radial-gradient(${rgba("#ffffff", 0.5)} 1px, transparent 1.5px), radial-gradient(${rgba("#ffd700", 0.45)} 1.2px, transparent 1.5px)`, backgroundSize: "10px 10px, 14px 14px, 18px 18px", backgroundPosition: "0 0, 3px 5px, 6px 8px", backgroundBlendMode: "screen" };
-    case "holographic": return { background: base, backgroundImage: `conic-gradient(from 0deg, #ff0080, #ffbf00, #00ff6a, #00c8ff, #8a2be2, #ff0080), linear-gradient(${rgba("#ffffff", 0.12)}, ${rgba("#ffffff", 0.12)})`, backgroundBlendMode: "screen, normal" };
-    case "matte": return { background: base, filter: "saturate(0.85) brightness(0.95) contrast(0.95)" };
-    case "jelly": return { background: base, backgroundImage: `linear-gradient(${rgba("#ffffff", 0.12)}, ${rgba("#ffffff", 0.12)})`, backgroundBlendMode: "overlay" };
-    case "neon": return { background: base, boxShadow: `0 0 8px ${light}, 0 0 16px ${light}` };
-    case "thermal": return { backgroundImage: `linear-gradient(90deg, ${light} 0 50%, ${dark} 50% 100%)` };
-    case "magnetic": return { background: base, backgroundImage: `repeating-linear-gradient(60deg, ${rgba("#000000", 0.25)} 0 6px, transparent 6px 18px)`, backgroundBlendMode: "multiply" };
-    case "flake": return { background: base, backgroundImage: `radial-gradient(${rgba("#ffffff", 0.6)} 1px, transparent 1.5px), radial-gradient(${rgba("#ffd7a6", 0.5)} 1.2px, transparent 1.6px)`, backgroundSize: "16px 12px, 22px 16px", backgroundBlendMode: "screen" };
-    default: return { background: base };
+    case "metallic":
+      return { background: base, backgroundImage:
+        `linear-gradient(115deg, ${rgba("#ffffff", .5)}, transparent 30%),
+         linear-gradient(295deg, ${rgba("#000000", .18)}, transparent 40%),
+         linear-gradient(45deg, ${rgba("#ffffff", .25)}, transparent 60%)`,
+        backgroundBlendMode: "screen, multiply, screen" };
+    case "shimmer":
+      return { background: base, backgroundImage:
+        `radial-gradient(circle at 20% 30%, ${rgba("#ffffff", .25)} 0 25%, transparent 26%),
+         radial-gradient(circle at 70% 60%, ${rgba("#ffffff", .18)} 0 18%, transparent 19%)`,
+        backgroundSize: "24px 24px, 28px 28px", backgroundRepeat: "repeat" };
+    case "glitter":
+      return { background: base, backgroundImage:
+        `radial-gradient(${rgba("#ffffff", .85)} 1px, transparent 1.5px),
+         radial-gradient(${rgba("#ffffff", .5)} 1px, transparent 1.5px),
+         radial-gradient(${rgba("#ffd700", .45)} 1.2px, transparent 1.5px)`,
+        backgroundSize: "10px 10px, 14px 14px, 18px 18px",
+        backgroundPosition: "0 0, 3px 5px, 6px 8px", backgroundBlendMode: "screen" };
+    case "holographic":
+      return { background: base, backgroundImage:
+        `conic-gradient(from 0deg, #ff0080, #ffbf00, #00ff6a, #00c8ff, #8a2be2, #ff0080),
+         linear-gradient(${rgba("#ffffff", .12)}, ${rgba("#ffffff", .12)})`,
+        backgroundBlendMode: "screen, normal" };
+    case "matte":
+      return { background: base, filter: "saturate(0.85) brightness(0.95) contrast(0.95)" };
+    case "jelly":
+      return { background: base, backgroundImage:
+        `linear-gradient(${rgba("#ffffff", .12)}, ${rgba("#ffffff", .12)})`,
+        backgroundBlendMode: "overlay" };
+    case "neon":
+      return { background: base, boxShadow: `0 0 8px ${light}, 0 0 16px ${light}` };
+    case "thermal":
+      return { backgroundImage: `linear-gradient(90deg, ${light} 0 50%, ${dark} 50% 100%)` };
+    case "magnetic":
+      return { background: base, backgroundImage:
+        `repeating-linear-gradient(60deg, ${rgba("#000000", .25)} 0 6px, transparent 6px 18px)`,
+        backgroundBlendMode: "multiply" };
+    case "flake":
+      return { background: base, backgroundImage:
+        `radial-gradient(${rgba("#ffffff", .6)} 1px, transparent 1.5px),
+         radial-gradient(${rgba("#ffd7a6", .5)} 1.2px, transparent 1.6px)`,
+        backgroundSize: "16px 12px, 22px 16px", backgroundBlendMode: "screen" };
+    default:
+      return { background: base };
   }
 }
 
-/* ---------- Persist ---------- */
+/* ---------- Responsive Grid Columns Helper ---------- */
+// Max grid columns by viewport; cap at 12 and at slotsPerShelf
+function useResponsiveCols(slotsPerShelf) {
+  const getCols = () => {
+    const w = typeof window !== "undefined" ? window.innerWidth : 1024;
+    const base =
+      w < 480  ? 4  :
+      w < 640  ? 6  :
+      w < 768  ? 8  :
+      w < 1024 ? 10 :
+                 12; // desktop max 12
+    return Math.min(slotsPerShelf, base);
+  };
+  const [cols, setCols] = React.useState(getCols());
+  React.useEffect(() => {
+    const onR = () => setCols(getCols());
+    window.addEventListener("resize", onR);
+    return () => window.removeEventListener("resize", onR);
+  }, [slotsPerShelf]);
+  return cols;
+}
+
+/* ---------- Persist (localStorage) ---------- */
 const STORAGE_KEY = "nailvault_state_v1";
 
 function usePersistentState() {
@@ -173,6 +228,7 @@ function usePersistentState() {
 function useCloudSync(state, dispatch) {
   const unsubRef = useRef(null);
   const mountedRef = useRef(false);
+
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -180,6 +236,8 @@ function useCloudSync(state, dispatch) {
       if (unsubRef.current) unsubRef.current();
     };
   }, []);
+
+  // subscribe when syncKey present
   useEffect(() => {
     const syncKey = state.settings?.syncKey?.trim();
     if (!syncKey) {
@@ -206,14 +264,21 @@ function useCloudSync(state, dispatch) {
         makeListener("meta"),
       ];
       unsubRef.current = () => unsubs.forEach((u) => u && u());
+
       const metaDoc = doc(db, "rooms", syncKey, "meta", "settings");
-      await setDoc(metaDoc, { settings: { ...state.settings, syncKey: undefined }, updatedAt: serverTimestamp() }, { merge: true });
+      await setDoc(
+        metaDoc,
+        { settings: { ...state.settings, syncKey: undefined }, updatedAt: serverTimestamp() },
+        { merge: true }
+      );
     })();
     return () => {
       if (unsubRef.current) unsubRef.current();
       unsubRef.current = null;
     };
   }, [state.settings?.syncKey, state.settings]);
+
+  // mirror local changes up
   useEffect(() => {
     const syncKey = state.settings?.syncKey?.trim();
     if (!syncKey) return;
@@ -229,12 +294,16 @@ function useCloudSync(state, dispatch) {
       await upsertAll("polishes", state.polishes);
       await upsertAll("tools", state.tools);
       await upsertAll("manis", state.manis);
+
       const metaDoc = doc(db, "rooms", syncKey, "meta", "settings");
-      await setDoc(metaDoc, { settings: { ...state.settings, syncKey: undefined }, updatedAt: serverTimestamp() }, { merge: true });
+      await setDoc(
+        metaDoc,
+        { settings: { ...state.settings, syncKey: undefined }, updatedAt: serverTimestamp() },
+        { merge: true }
+      );
     })();
   }, [state.polishes, state.tools, state.manis, state.settings, state.settings?.syncKey]);
 }
-
 
 /* ---------- UI Bits ---------- */
 function ToolbarButton({ icon, label, onClick, className = "", type = "button" }) {
@@ -278,7 +347,7 @@ const Input = React.forwardRef(function Input({ label, ...props }, ref) {
     <label className="grid text-sm gap-1">
       <span className="opacity-80">{label}</span>
       <input
-        ref={ref}   // 👈 NEW so we can programmatically focus
+        ref={ref}
         {...props}
         className="px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/70"
       />
@@ -320,11 +389,7 @@ function ColorSwatch({ hex, finish }) {
 }
 
 function Pill({ children }) {
-  return (
-    <span className="px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-xs">
-      {children}
-    </span>
-  );
+  return <span className="px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-xs">{children}</span>;
 }
 
 function ImageInput({ label, value, onChange }) {
@@ -340,7 +405,6 @@ function ImageInput({ label, value, onChange }) {
       <span className="opacity-80">{label}</span>
       {value ? (
         <div className="flex items-center gap-3">
-          {/* eslint-disable-next-line jsx-a11y/alt-text */}
           <img src={value} alt="preview" className="w-16 h-16 object-cover rounded-xl border border-black/10" />
           <div className="flex gap-2">
             <ToolbarButton label="Replace" onClick={() => fileRef.current?.click()} className="bg-indigo-100 text-indigo-900" />
@@ -364,7 +428,7 @@ function AutoCompleteInput({
   onChange,
   suggestions = [],
   placeholder,
-  onSelected,            // NEW: callback when a suggestion is chosen
+  onSelected,
 }) {
   const filtered = useMemo(() => {
     const v = (value || "").toLowerCase();
@@ -373,13 +437,12 @@ function AutoCompleteInput({
 
   return (
     <div className="relative">
-      {/* Disable browser autofill */}
       <Input
         label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        autoComplete="off"          // NEW
+        autoComplete="off"
       />
       {filtered.length > 0 && (
         <div className="absolute left-0 right-0 mt-1 z-20 bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-xl overflow-hidden shadow">
@@ -389,7 +452,7 @@ function AutoCompleteInput({
               type="button"
               onClick={() => {
                 onChange(s);
-                onSelected?.(s);     // NEW: let parent move focus, etc.
+                onSelected?.(s);
               }}
               className="block w-full text-left px-3 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/5"
             >
@@ -424,8 +487,6 @@ function PolishForm({ onSubmit, initial, settings }) {
     }
   );
   const [tagInput, setTagInput] = useState("");
-
-  // NEW: focus target for the Name field
   const nameInputRef = useRef(null);
 
   const addTag = () => {
@@ -452,7 +513,7 @@ function PolishForm({ onSubmit, initial, settings }) {
             onChange={(v) => setForm({ ...form, brand: v })}
             suggestions={BRAND_SUGGESTIONS}
             placeholder="e.g., OPI"
-            onSelected={() => nameInputRef.current?.focus()}   // NEW
+            onSelected={() => nameInputRef.current?.focus()}
           />
           <Input
             label="Name"
@@ -460,8 +521,8 @@ function PolishForm({ onSubmit, initial, settings }) {
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
-            autoComplete="off"                                 // NEW
-            ref={nameInputRef}                                 // NEW
+            autoComplete="off"
+            ref={nameInputRef}
           />
           <Input label="Shade Code (optional)" placeholder="e.g., NL H47" value={form.shadeCode} onChange={(e) => setForm({ ...form, shadeCode: e.target.value })} />
           <Input label="Barcode (optional)" placeholder="UPC/EAN digits" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} />
@@ -470,7 +531,7 @@ function PolishForm({ onSubmit, initial, settings }) {
             <div className="flex gap-3 items-center">
               <input type="color" value={form.colorHex || "#cccccc"} onChange={(e) => setForm({ ...form, colorHex: e.target.value })} className="w-12 h-10 p-0 rounded-lg border border-black/10" title="Pick color" />
               <input type="text" value={form.colorHex || ""} onChange={(e) => setForm({ ...form, colorHex: e.target.value })} className="px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900" placeholder="#RRGGBB" />
-              <ColorSwatch hex={form.colorHex} />
+              <ColorSwatch hex={form.colorHex} finish={form.finish} />
             </div>
           </label>
           <Select label="Finish" options={FINISHES} value={form.finish} onChange={(v) => setForm({ ...form, finish: v })} />
@@ -504,7 +565,6 @@ function PolishForm({ onSubmit, initial, settings }) {
     </form>
   );
 }
-
 
 /* ---------- Inventory List ---------- */
 function Inventory({ state, dispatch }) {
@@ -561,7 +621,6 @@ function Inventory({ state, dispatch }) {
         {filtered.map((p) => (
           <div key={p.id} className="rounded-2xl ring-1 ring-black/5 dark:ring-white/10 bg-white dark:bg-zinc-900 p-4 shadow-sm">
             <div className="flex items-start gap-3">
-              {/* eslint-disable-next-line jsx-a11y/alt-text */}
               <img
                 src={p.imageDataUrl || placeholderFromHex(p.colorHex)}
                 alt={`${p.brand} ${p.name}`}
@@ -612,6 +671,9 @@ function Inventory({ state, dispatch }) {
 /* ---------- Wall Planner ---------- */
 function WallPlanner({ state, dispatch }) {
   const { slotsPerShelf, shelvesPerWall, wallCount, wallNames = defaultWallNames(state.settings.wallCount) } = state.settings;
+
+  // responsive max columns (4/6/8/10/12 capped by slotsPerShelf)
+  const cols = useResponsiveCols(slotsPerShelf);
 
   const occupancy = useMemo(() => {
     const map = new Map();
@@ -688,14 +750,19 @@ function WallPlanner({ state, dispatch }) {
         <Section key={wall} title={`Wall ${wall}`} subtitle="Drag polishes into slots">
           <div className="grid gap-4">
             {Array.from({ length: shelvesPerWall }).map((_, i) => (
-              <div key={i} className="rounded-2xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10 p-3">
+              <div key={i} className="rounded-2xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10 p-2 sm:p-3">
                 <div className="flex items-center justify-between mb-2">
                   <div className="font-semibold">Shelf {i + 1}</div>
                   <div className="text-xs opacity-70">
                     {Array.from({ length: slotsPerShelf }).filter((__, idx) => occupancy.has(`${wall}-${i + 1}-${idx + 1}`)).length}/{slotsPerShelf} filled
                   </div>
                 </div>
-                <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${slotsPerShelf}, minmax(0,1fr))` }}>
+
+                {/* Responsive grid: up to 12 columns on desktop, fewer on small screens; readable cell size */}
+                <div
+                  className="grid gap-2"
+                  style={{ gridTemplateColumns: `repeat(${cols}, minmax(72px, 1fr))` }}
+                >
                   {Array.from({ length: slotsPerShelf }).map((_, j) => {
                     const pos = j + 1;
                     const key = `${wall}-${i + 1}-${pos}`;
@@ -705,20 +772,21 @@ function WallPlanner({ state, dispatch }) {
                         key={j}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDrop(e, wall, i + 1, pos)}
-                        className={`aspect-square rounded-xl border border-dashed ${pol ? "border-transparent" : "border-black/20 dark:border-white/20"} bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 relative overflow-hidden`}
+                        className={`relative overflow-hidden rounded-xl border border-dashed ${pol ? "border-transparent" : "border-black/20 dark:border-white/20"} bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 aspect-square`}
                         title={pol ? `${pol.brand || ""} ${pol.name}` : `Position ${pos}`}
                       >
                         {pol ? (
-                          <div className="absolute inset-0 p-1">
+                          <div className="absolute inset-0 p-2">
                             <div
-  className="w-full h-2 rounded-lg"
-  style={finishStyle(pol.colorHex || "#ddd", pol.finish)}
-/>
-
-                            <div className="mt-1 text-[10px] leading-tight line-clamp-2">{(pol.brand || "").slice(0, 10)}{pol.brand ? " · " : ""}{pol.name}</div>
+                              className="w-full h-3 rounded-md"
+                              style={finishStyle(pol.colorHex || "#ddd", pol.finish)}
+                            />
+                            <div className="mt-1 text-[12px] sm:text-[11px] leading-tight line-clamp-2">
+                              {(pol.brand || "").slice(0, 14)}{pol.brand ? " · " : ""}{pol.name}
+                            </div>
                           </div>
                         ) : (
-                          <div className="absolute inset-0 grid place-items-center text-xs opacity-40">{pos}</div>
+                          <div className="absolute inset-0 grid place-items-center text-sm sm:text-xs opacity-40">{pos}</div>
                         )}
                       </div>
                     );
@@ -735,10 +803,9 @@ function WallPlanner({ state, dispatch }) {
           {state.polishes.map((p) => (
             <div key={p.id} draggable onDragStart={(e) => e.dataTransfer.setData("text/polish_id", p.id)} className="p-2 rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10 cursor-grab active:cursor-grabbing" title="Drag to place">
               <div
-  className="w-full h-6 rounded-md"
-  style={finishStyle(p.colorHex || "#ddd", p.finish)}
-/>
-
+                className="w-full h-8 sm:h-6 rounded-md"
+                style={finishStyle(p.colorHex || "#ddd", p.finish)}
+              />
               <div className="mt-1 text-xs font-medium truncate">{p.brand || "—"}</div>
               <div className="text-[11px] opacity-70 truncate">{p.name}</div>
               <div className="text-[10px] opacity-50">{p.wall ? `${p.wall}` : "—"} {p.shelf ? `S${p.shelf}` : ""} {p.position ? `#${p.position}` : ""}</div>
@@ -750,7 +817,7 @@ function WallPlanner({ state, dispatch }) {
   );
 }
 
-// ---------- Tools ----------
+/* ---------- Tools ---------- */
 function ToolsView({ state, dispatch }) {
   const [form, setForm] = useState({ id: uid(), name: "", type: "", brand: "", notes: "", image: null });
   const [query, setQuery] = useState("");
@@ -788,7 +855,6 @@ function ToolsView({ state, dispatch }) {
           {filtered.map((t) => (
             <div key={t.id} className="p-4 rounded-2xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
               <div className="flex items-start gap-3">
-                {/* eslint-disable-next-line jsx-a11y/alt-text */}
                 <img src={t.image || placeholderFromHex("#d1d5db")} alt="tool" className="w-16 h-16 object-cover rounded-lg border" />
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold truncate">{t.name}</div>
@@ -821,7 +887,7 @@ function SelectMulti({ label, options, values, onChange }) {
         {filtered.map((o) => {
           const active = values.includes(o.value);
           return (
-            <button key={o.value} type="button" onClick={() => onChange(active ? values.filter((v) => v !== o.value) : [...values, o.value])} className={`w-full text-left px-3 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/5 ${active ? "bg-fuchsia-50/60 dark:bg-fuchsia-500/10" : ""}`}>
+            <button key={o.value} type="button" onClick={() => onChange(active ? values.filter((v) => v !== o.value) : [...values, o.value])} className={`w-full text-left px-3 py-2 text-sm hover:bg-black/5 dark:hover:bg:white/5 ${active ? "bg-fuchsia-50/60 dark:bg-fuchsia-500/10" : ""}`}>
               {o.label}
             </button>
           );
@@ -905,7 +971,6 @@ function ManicuresView({ state, dispatch }) {
           {state.manis.map((m) => (
             <div key={m.id} className="p-4 rounded-2xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10">
               <div className="flex items-start gap-3">
-                {/* eslint-disable-next-line jsx-a11y/alt-text */}
                 <img src={m.image || placeholderFromHex("#fbcfe8")} alt="mani" className="w-20 h-20 object-cover rounded-xl border" />
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold truncate">{m.title || "Untitled manicure"}</div>
@@ -1143,7 +1208,7 @@ export default function App() {
   const [state, dispatch] = usePersistentState();
   const [tab, setTab] = useState("inventory");
 
-  // Enable cloud sync
+  // Enable cloud sync if a household key is set
   useCloudSync(state, dispatch);
 
   useEffect(() => {
