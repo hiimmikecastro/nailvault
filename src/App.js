@@ -53,10 +53,10 @@ const BRAND_SUGGESTIONS = [
 const defaultSettings = {
   wallCount: 2,
   shelvesPerWall: 8,
-  slotsPerShelf: 21, // default capacity per shelf
+  slotsPerShelf: 21,
   wallNames: ["A", "B"],
   colorTheme: "vivid",
-  syncKey: "", // shared code for syncing across devices
+  syncKey: "",
 };
 
 const initialState = {
@@ -100,13 +100,52 @@ function reducer(state, action) {
   }
 }
 
+/* ---------- Finish Visual Helpers ---------- */
+function hexToRgb(hex) {
+  if (!hex) return [229, 231, 235];
+  const h = String(hex).replace("#", "");
+  const v = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const n = parseInt(v || "e5e7eb", 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function rgba(hex, a) {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+function lighten(hex, amt = 0.2) {
+  const [r, g, b] = hexToRgb(hex);
+  const f = (x) => Math.max(0, Math.min(255, Math.round(x + (255 - x) * amt)));
+  return `rgb(${f(r)}, ${f(g)}, ${f(b)})`;
+}
+function darken(hex, amt = 0.2) {
+  const [r, g, b] = hexToRgb(hex);
+  const f = (x) => Math.max(0, Math.min(255, Math.round(x * (1 - amt))));
+  return `rgb(${f(r)}, ${f(g)}, ${f(b)})`;
+}
+function finishStyle(baseHex = "#ddd", finish = "cream") {
+  const base = baseHex;
+  const light = lighten(base, 0.35);
+  const dark = darken(base, 0.35);
+  switch (String(finish || "").toLowerCase()) {
+    case "metallic": return { background: base, backgroundImage: `linear-gradient(115deg, ${rgba("#ffffff", 0.5)}, transparent 30%), linear-gradient(295deg, ${rgba("#000000", 0.18)}, transparent 40%), linear-gradient(45deg, ${rgba("#ffffff", 0.25)}, transparent 60%)`, backgroundBlendMode: "screen, multiply, screen" };
+    case "shimmer": return { background: base, backgroundImage: `radial-gradient(circle at 20% 30%, ${rgba("#ffffff", 0.25)} 0 25%, transparent 26%), radial-gradient(circle at 70% 60%, ${rgba("#ffffff", 0.18)} 0 18%, transparent 19%)`, backgroundSize: "24px 24px, 28px 28px", backgroundRepeat: "repeat" };
+    case "glitter": return { background: base, backgroundImage: `radial-gradient(${rgba("#ffffff", 0.85)} 1px, transparent 1.5px), radial-gradient(${rgba("#ffffff", 0.5)} 1px, transparent 1.5px), radial-gradient(${rgba("#ffd700", 0.45)} 1.2px, transparent 1.5px)`, backgroundSize: "10px 10px, 14px 14px, 18px 18px", backgroundPosition: "0 0, 3px 5px, 6px 8px", backgroundBlendMode: "screen" };
+    case "holographic": return { background: base, backgroundImage: `conic-gradient(from 0deg, #ff0080, #ffbf00, #00ff6a, #00c8ff, #8a2be2, #ff0080), linear-gradient(${rgba("#ffffff", 0.12)}, ${rgba("#ffffff", 0.12)})`, backgroundBlendMode: "screen, normal" };
+    case "matte": return { background: base, filter: "saturate(0.85) brightness(0.95) contrast(0.95)" };
+    case "jelly": return { background: base, backgroundImage: `linear-gradient(${rgba("#ffffff", 0.12)}, ${rgba("#ffffff", 0.12)})`, backgroundBlendMode: "overlay" };
+    case "neon": return { background: base, boxShadow: `0 0 8px ${light}, 0 0 16px ${light}` };
+    case "thermal": return { backgroundImage: `linear-gradient(90deg, ${light} 0 50%, ${dark} 50% 100%)` };
+    case "magnetic": return { background: base, backgroundImage: `repeating-linear-gradient(60deg, ${rgba("#000000", 0.25)} 0 6px, transparent 6px 18px)`, backgroundBlendMode: "multiply" };
+    case "flake": return { background: base, backgroundImage: `radial-gradient(${rgba("#ffffff", 0.6)} 1px, transparent 1.5px), radial-gradient(${rgba("#ffd7a6", 0.5)} 1.2px, transparent 1.6px)`, backgroundSize: "16px 12px, 22px 16px", backgroundBlendMode: "screen" };
+    default: return { background: base };
+  }
+}
+
 /* ---------- Persist ---------- */
 const STORAGE_KEY = "nailvault_state_v1";
 
 function usePersistentState() {
   const [state, dispatch] = useReducer(reducer, initialState);
-
-  // Load from localStorage on first mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -120,8 +159,6 @@ function usePersistentState() {
       console.warn("Failed to load saved state", e);
     }
   }, []);
-
-  // Save to localStorage whenever state changes
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -129,15 +166,13 @@ function usePersistentState() {
       console.warn("Failed to save state", e);
     }
   }, [state]);
-
   return [state, dispatch];
 }
 
-/* ---------- Cloud Sync (Firebase / Step 5) ---------- */
+/* ---------- Cloud Sync (Firebase) ---------- */
 function useCloudSync(state, dispatch) {
   const unsubRef = useRef(null);
   const mountedRef = useRef(false);
-
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -145,8 +180,6 @@ function useCloudSync(state, dispatch) {
       if (unsubRef.current) unsubRef.current();
     };
   }, []);
-
-  // Subscribe to Firestore when syncKey is present
   useEffect(() => {
     const syncKey = state.settings?.syncKey?.trim();
     if (!syncKey) {
@@ -154,11 +187,9 @@ function useCloudSync(state, dispatch) {
       unsubRef.current = null;
       return;
     }
-
     let unsubs = [];
     (async () => {
       await ensureAnonAuth();
-
       const makeListener = (name) => {
         const c = collection(db, "rooms", syncKey, name);
         return onSnapshot(c, (snap) => {
@@ -168,38 +199,26 @@ function useCloudSync(state, dispatch) {
           }
         });
       };
-
       unsubs = [
         makeListener("polishes"),
         makeListener("tools"),
         makeListener("manis"),
-        makeListener("meta"), // reserved for future
+        makeListener("meta"),
       ];
       unsubRef.current = () => unsubs.forEach((u) => u && u());
-
-      // Write meta/settings (without exposing syncKey)
       const metaDoc = doc(db, "rooms", syncKey, "meta", "settings");
-      await setDoc(
-        metaDoc,
-        { settings: { ...state.settings, syncKey: undefined }, updatedAt: serverTimestamp() },
-        { merge: true }
-      );
+      await setDoc(metaDoc, { settings: { ...state.settings, syncKey: undefined }, updatedAt: serverTimestamp() }, { merge: true });
     })();
-
     return () => {
       if (unsubRef.current) unsubRef.current();
       unsubRef.current = null;
     };
   }, [state.settings?.syncKey, state.settings]);
-
-  // Mirror local changes up to Firestore
   useEffect(() => {
     const syncKey = state.settings?.syncKey?.trim();
     if (!syncKey) return;
-
     (async () => {
       await ensureAnonAuth();
-
       const upsertAll = async (name, arr) => {
         for (const item of arr) {
           if (!item.id) continue;
@@ -207,20 +226,15 @@ function useCloudSync(state, dispatch) {
           await setDoc(ref, { ...item, updatedAt: serverTimestamp() }, { merge: true });
         }
       };
-
       await upsertAll("polishes", state.polishes);
       await upsertAll("tools", state.tools);
       await upsertAll("manis", state.manis);
-
       const metaDoc = doc(db, "rooms", syncKey, "meta", "settings");
-      await setDoc(
-        metaDoc,
-        { settings: { ...state.settings, syncKey: undefined }, updatedAt: serverTimestamp() },
-        { merge: true }
-      );
+      await setDoc(metaDoc, { settings: { ...state.settings, syncKey: undefined }, updatedAt: serverTimestamp() }, { merge: true });
     })();
   }, [state.polishes, state.tools, state.manis, state.settings, state.settings?.syncKey]);
 }
+
 
 /* ---------- UI Bits ---------- */
 function ToolbarButton({ icon, label, onClick, className = "", type = "button" }) {
@@ -259,14 +273,18 @@ function Section({ title, subtitle, children, right }) {
   );
 }
 
-function Input({ label, ...props }) {
+const Input = React.forwardRef(function Input({ label, ...props }, ref) {
   return (
     <label className="grid text-sm gap-1">
       <span className="opacity-80">{label}</span>
-      <input {...props} className="px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/70" />
+      <input
+        ref={ref}   // 👈 NEW so we can programmatically focus
+        {...props}
+        className="px-3 py-2 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-fuchsia-400/70"
+      />
     </label>
   );
-}
+});
 
 function Textarea({ label, ...props }) {
   return (
@@ -291,12 +309,22 @@ function Select({ label, options, value, onChange, allowEmpty = true }) {
   );
 }
 
-function ColorSwatch({ hex }) {
-  return <span title={hex} className="inline-block w-5 h-5 rounded-md border border-black/10 align-middle" style={{ background: hex || "linear-gradient(45deg,#eee,#ccc)" }} />;
+function ColorSwatch({ hex, finish }) {
+  return (
+    <span
+      title={`${hex || ""} ${finish || ""}`}
+      className="inline-block w-5 h-5 rounded-md border border-black/10 align-middle"
+      style={finishStyle(hex, finish)}
+    />
+  );
 }
 
 function Pill({ children }) {
-  return <span className="px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-xs">{children}</span>;
+  return (
+    <span className="px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-xs">
+      {children}
+    </span>
+  );
 }
 
 function ImageInput({ label, value, onChange }) {
@@ -330,18 +358,41 @@ function ImageInput({ label, value, onChange }) {
   );
 }
 
-function AutoCompleteInput({ label, value, onChange, suggestions = [], placeholder }) {
+function AutoCompleteInput({
+  label,
+  value,
+  onChange,
+  suggestions = [],
+  placeholder,
+  onSelected,            // NEW: callback when a suggestion is chosen
+}) {
   const filtered = useMemo(() => {
     const v = (value || "").toLowerCase();
     return suggestions.filter((s) => s.toLowerCase().includes(v)).slice(0, 6);
   }, [value, suggestions]);
+
   return (
     <div className="relative">
-      <Input label={label} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      {/* Disable browser autofill */}
+      <Input
+        label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete="off"          // NEW
+      />
       {filtered.length > 0 && (
         <div className="absolute left-0 right-0 mt-1 z-20 bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-xl overflow-hidden shadow">
           {filtered.map((s) => (
-            <button key={s} type="button" onClick={() => onChange(s)} className="block w-full text-left px-3 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/5">
+            <button
+              key={s}
+              type="button"
+              onClick={() => {
+                onChange(s);
+                onSelected?.(s);     // NEW: let parent move focus, etc.
+              }}
+              className="block w-full text-left px-3 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/5"
+            >
               {s}
             </button>
           ))}
@@ -374,6 +425,9 @@ function PolishForm({ onSubmit, initial, settings }) {
   );
   const [tagInput, setTagInput] = useState("");
 
+  // NEW: focus target for the Name field
+  const nameInputRef = useRef(null);
+
   const addTag = () => {
     const t = tagInput.trim();
     if (t && !form.tags.includes(t)) setForm({ ...form, tags: [...form.tags, t] });
@@ -398,8 +452,17 @@ function PolishForm({ onSubmit, initial, settings }) {
             onChange={(v) => setForm({ ...form, brand: v })}
             suggestions={BRAND_SUGGESTIONS}
             placeholder="e.g., OPI"
+            onSelected={() => nameInputRef.current?.focus()}   // NEW
           />
-          <Input label="Name" placeholder="e.g., One Coat Black" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+          <Input
+            label="Name"
+            placeholder="e.g., One Coat Black"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            required
+            autoComplete="off"                                 // NEW
+            ref={nameInputRef}                                 // NEW
+          />
           <Input label="Shade Code (optional)" placeholder="e.g., NL H47" value={form.shadeCode} onChange={(e) => setForm({ ...form, shadeCode: e.target.value })} />
           <Input label="Barcode (optional)" placeholder="UPC/EAN digits" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} />
           <label className="grid text-sm gap-1">
@@ -441,6 +504,7 @@ function PolishForm({ onSubmit, initial, settings }) {
     </form>
   );
 }
+
 
 /* ---------- Inventory List ---------- */
 function Inventory({ state, dispatch }) {
@@ -505,7 +569,7 @@ function Inventory({ state, dispatch }) {
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <ColorSwatch hex={p.colorHex} />
+                  <ColorSwatch hex={p.colorHex} finish={p.finish} />
                   <h4 className="font-semibold truncate">{p.brand || "—"} · {p.name}</h4>
                 </div>
                 <div className="mt-1 flex flex-wrap gap-2 text-xs">
@@ -646,7 +710,11 @@ function WallPlanner({ state, dispatch }) {
                       >
                         {pol ? (
                           <div className="absolute inset-0 p-1">
-                            <div className="w-full h-2 rounded-lg" style={{ background: pol.colorHex || "#ddd" }} />
+                            <div
+  className="w-full h-2 rounded-lg"
+  style={finishStyle(pol.colorHex || "#ddd", pol.finish)}
+/>
+
                             <div className="mt-1 text-[10px] leading-tight line-clamp-2">{(pol.brand || "").slice(0, 10)}{pol.brand ? " · " : ""}{pol.name}</div>
                           </div>
                         ) : (
@@ -666,7 +734,11 @@ function WallPlanner({ state, dispatch }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {state.polishes.map((p) => (
             <div key={p.id} draggable onDragStart={(e) => e.dataTransfer.setData("text/polish_id", p.id)} className="p-2 rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10 cursor-grab active:cursor-grabbing" title="Drag to place">
-              <div className="w-full h-6 rounded-md" style={{ background: p.colorHex || "#ddd" }} />
+              <div
+  className="w-full h-6 rounded-md"
+  style={finishStyle(p.colorHex || "#ddd", p.finish)}
+/>
+
               <div className="mt-1 text-xs font-medium truncate">{p.brand || "—"}</div>
               <div className="text-[11px] opacity-70 truncate">{p.name}</div>
               <div className="text-[10px] opacity-50">{p.wall ? `${p.wall}` : "—"} {p.shelf ? `S${p.shelf}` : ""} {p.position ? `#${p.position}` : ""}</div>
