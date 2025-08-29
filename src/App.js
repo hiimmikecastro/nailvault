@@ -758,7 +758,7 @@ function WallPlanner({ state, dispatch }) {
                   </div>
                 </div>
 
-                {/* Responsive grid: up to 12 columns on desktop, fewer on small screens; readable cell size */}
+                {/* Responsive grid: up to 12 columns on desktop (capped), with readable min cell size */}
                 <div
                   className="grid gap-2"
                   style={{ gridTemplateColumns: `repeat(${cols}, minmax(72px, 1fr))` }}
@@ -772,16 +772,20 @@ function WallPlanner({ state, dispatch }) {
                         key={j}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleDrop(e, wall, i + 1, pos)}
-                        className={`relative overflow-hidden rounded-xl border border-dashed ${pol ? "border-transparent" : "border-black/20 dark:border-white/20"} bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 aspect-square`}
+                        className={`relative overflow-hidden rounded-xl border border-dashed ${
+                          pol ? "border-transparent" : "border-black/20 dark:border-white/20"
+                        } bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 aspect-square`}
                         title={pol ? `${pol.brand || ""} ${pol.name}` : `Position ${pos}`}
                       >
                         {pol ? (
-                          <div className="absolute inset-0 p-2">
+                          <div className="absolute inset-0 p-2 h-full grid grid-rows-[1fr_2fr] gap-1">
+                            {/* 1/3 tile height swatch */}
                             <div
-                              className="w-full h-3 rounded-md"
+                              className="w-full rounded-md"
                               style={finishStyle(pol.colorHex || "#ddd", pol.finish)}
                             />
-                            <div className="mt-1 text-[12px] sm:text-[11px] leading-tight line-clamp-2">
+                            {/* 2/3 text area */}
+                            <div className="min-h-0 text-[12px] sm:text-[11px] leading-tight line-clamp-2">
                               {(pol.brand || "").slice(0, 14)}{pol.brand ? " · " : ""}{pol.name}
                             </div>
                           </div>
@@ -798,17 +802,27 @@ function WallPlanner({ state, dispatch }) {
         </Section>
       ))}
 
+      {/* Draggable list stays as you already updated it */}
       <Section title="Draggable polishes" subtitle="Drag a card onto a slot to place it on a shelf">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-12 gap-3">
           {state.polishes.map((p) => (
-            <div key={p.id} draggable onDragStart={(e) => e.dataTransfer.setData("text/polish_id", p.id)} className="p-2 rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10 cursor-grab active:cursor-grabbing" title="Drag to place">
-              <div
-                className="w-full h-8 sm:h-6 rounded-md"
-                style={finishStyle(p.colorHex || "#ddd", p.finish)}
-              />
-              <div className="mt-1 text-xs font-medium truncate">{p.brand || "—"}</div>
-              <div className="text-[11px] opacity-70 truncate">{p.name}</div>
-              <div className="text-[10px] opacity-50">{p.wall ? `${p.wall}` : "—"} {p.shelf ? `S${p.shelf}` : ""} {p.position ? `#${p.position}` : ""}</div>
+            <div
+              key={p.id}
+              draggable
+              onDragStart={(e) => e.dataTransfer.setData("text/polish_id", p.id)}
+              className="p-2 rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10 cursor-grab active:cursor-grabbing"
+              title="Drag to place"
+            >
+              <div className="grid grid-rows-[1fr_2fr] h-28 sm:h-32 gap-1">
+                <div className="w-full rounded-md" style={finishStyle(p.colorHex || "#ddd", p.finish)} />
+                <div className="min-h-0 flex flex-col">
+                  <div className="text-xs font-medium truncate">{p.brand || "—"}</div>
+                  <div className="text-[11px] opacity-70 truncate">{p.name}</div>
+                  <div className="text-[10px] opacity-50">
+                    {p.wall ? `${p.wall}` : "—"} {p.shelf ? `S${p.shelf}` : ""} {p.position ? `#${p.position}` : ""}
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -1217,17 +1231,17 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-fuchsia-50 via-pink-50 to-rose-50 dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-950 text-zinc-900 dark:text-zinc-100">
-      <Header tab={tab} setTab={setTab} />
-      <main className="max-w-6xl mx-auto px-3 py-4 sm:py-6 grid gap-4">
-        {tab === "inventory" && <Inventory state={state} dispatch={dispatch} />}
-        {tab === "wall" && <WallPlanner state={state} dispatch={dispatch} />}
-        {tab === "manis" && <ManicuresView state={state} dispatch={dispatch} />}
-        {tab === "tools" && <ToolsView state={state} dispatch={dispatch} />}
-        {tab === "stats" && <StatsView state={state} />}
-        {tab === "backup" && <BackupView state={state} dispatch={dispatch} />}
-      </main>
-      <Footer />
-    </div>
-  );
-}
+  <div className="min-h-screen bg-gradient-to-b from-fuchsia-50 via-pink-50 to-rose-50 dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-950 text-zinc-900 dark:text-zinc-100">
+    <Header tab={tab} setTab={setTab} />
+    {/* Wider container for desktop so 12 cols fit comfortably */}
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 grid gap-4">
+      {tab === "inventory" && <Inventory state={state} dispatch={dispatch} />}
+      {tab === "wall" && <WallPlanner state={state} dispatch={dispatch} />}
+      {tab === "manis" && <ManicuresView state={state} dispatch={dispatch} />}
+      {tab === "tools" && <ToolsView state={state} dispatch={dispatch} />}
+      {tab === "stats" && <StatsView state={state} />}
+      {tab === "backup" && <BackupView state={state} dispatch={dispatch} />}
+    </main>
+    <Footer />
+  </div>
+);
