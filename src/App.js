@@ -13,7 +13,7 @@ import {
 
 /* =============================
    NailVault — Single-file React app
-   Mobile-first, colorful, localStorage + optional Firebase sync
+   Mobile-first, localStorage + optional Firebase sync
    ============================= */
 
 /* ---------- Helpers ---------- */
@@ -119,7 +119,7 @@ function lighten(hex, amt = 0.2) {
 }
 function darken(hex, amt = 0.2) {
   const [r, g, b] = hexToRgb(hex);
-  const f = (x) => Math.max(0, Math.min(255, Math.round(x * (1 - amt)))) ;
+  const f = (x) => Math.max(0, Math.min(255, Math.round(x * (1 - amt))));
   return `rgb(${f(r)}, ${f(g)}, ${f(b)})`;
 }
 function finishStyle(baseHex = "#ddd", finish = "cream") {
@@ -128,47 +128,61 @@ function finishStyle(baseHex = "#ddd", finish = "cream") {
   const dark = darken(base, 0.35);
   switch (String(finish || "").toLowerCase()) {
     case "metallic":
-      return { background: base, backgroundImage:
-        `linear-gradient(115deg, ${rgba("#ffffff", .5)}, transparent 30%),
-         linear-gradient(295deg, ${rgba("#000000", .18)}, transparent 40%),
-         linear-gradient(45deg, ${rgba("#ffffff", .25)}, transparent 60%)`,
-        backgroundBlendMode: "screen, multiply, screen" };
+      return {
+        background: base,
+        backgroundImage:
+          `linear-gradient(115deg, ${rgba("#ffffff", 0.5)}, transparent 30%),
+           linear-gradient(295deg, ${rgba("#000000", 0.18)}, transparent 40%),
+           linear-gradient(45deg, ${rgba("#ffffff", 0.25)}, transparent 60%)`,
+        backgroundBlendMode: "screen, multiply, screen",
+      };
     case "shimmer":
-      return { background: base, backgroundImage:
-        `radial-gradient(circle at 20% 30%, ${rgba("#ffffff", .25)} 0 25%, transparent 26%),
-         radial-gradient(circle at 70% 60%, ${rgba("#ffffff", .18)} 0 18%, transparent 19%)`,
-        backgroundSize: "24px 24px, 28px 28px", backgroundRepeat: "repeat" };
+      return {
+        background: base,
+        backgroundImage:
+          `radial-gradient(circle at 20% 30%, ${rgba("#ffffff", 0.25)} 0 25%, transparent 26%),
+           radial-gradient(circle at 70% 60%, ${rgba("#ffffff", 0.18)} 0 18%, transparent 19%)`,
+        backgroundSize: "24px 24px, 28px 28px",
+        backgroundRepeat: "repeat",
+      };
     case "glitter":
-      return { background: base, backgroundImage:
-        `radial-gradient(${rgba("#ffffff", .85)} 1px, transparent 1.5px),
-         radial-gradient(${rgba("#ffffff", .5)} 1px, transparent 1.5px),
-         radial-gradient(${rgba("#ffd700", .45)} 1.2px, transparent 1.5px)`,
+      return {
+        background: base,
+        backgroundImage:
+          `radial-gradient(${rgba("#ffffff", 0.85)} 1px, transparent 1.5px),
+           radial-gradient(${rgba("#ffffff", 0.5)} 1px, transparent 1.5px),
+           radial-gradient(${rgba("#ffd700", 0.45)} 1.2px, transparent 1.5px)`,
         backgroundSize: "10px 10px, 14px 14px, 18px 18px",
-        backgroundPosition: "0 0, 3px 5px, 6px 8px", backgroundBlendMode: "screen" };
+        backgroundPosition: "0 0, 3px 5px, 6px 8px",
+        backgroundBlendMode: "screen",
+      };
     case "holographic":
-      return { background: base, backgroundImage:
-        `conic-gradient(from 0deg, #ff0080, #ffbf00, #00ff6a, #00c8ff, #8a2be2, #ff0080),
-         linear-gradient(${rgba("#ffffff", .12)}, ${rgba("#ffffff", .12)})`,
-        backgroundBlendMode: "screen, normal" };
+      return {
+        background: base,
+        backgroundImage:
+          `conic-gradient(from 0deg, #ff0080, #ffbf00, #00ff6a, #00c8ff, #8a2be2, #ff0080),
+           linear-gradient(${rgba("#ffffff", 0.12)}, ${rgba("#ffffff", 0.12)})`,
+        backgroundBlendMode: "screen, normal",
+      };
     case "matte":
       return { background: base, filter: "saturate(0.85) brightness(0.95) contrast(0.95)" };
     case "jelly":
-      return { background: base, backgroundImage:
-        `linear-gradient(${rgba("#ffffff", .12)}, ${rgba("#ffffff", .12)})`,
-        backgroundBlendMode: "overlay" };
+      return { background: base, backgroundImage: `linear-gradient(${rgba("#ffffff", 0.12)}, ${rgba("#ffffff", 0.12)})`, backgroundBlendMode: "overlay" };
     case "neon":
       return { background: base, boxShadow: `0 0 8px ${light}, 0 0 16px ${light}` };
     case "thermal":
       return { backgroundImage: `linear-gradient(90deg, ${light} 0 50%, ${dark} 50% 100%)` };
     case "magnetic":
-      return { background: base, backgroundImage:
-        `repeating-linear-gradient(60deg, ${rgba("#000000", .25)} 0 6px, transparent 6px 18px)`,
-        backgroundBlendMode: "multiply" };
+      return { background: base, backgroundImage: `repeating-linear-gradient(60deg, ${rgba("#000000", 0.25)} 0 6px, transparent 6px 18px)`, backgroundBlendMode: "multiply" };
     case "flake":
-      return { background: base, backgroundImage:
-        `radial-gradient(${rgba("#ffffff", .6)} 1px, transparent 1.5px),
-         radial-gradient(${rgba("#ffd7a6", .5)} 1.2px, transparent 1.6px)`,
-        backgroundSize: "16px 12px, 22px 16px", backgroundBlendMode: "screen" };
+      return {
+        background: base,
+        backgroundImage:
+          `radial-gradient(${rgba("#ffffff", 0.6)} 1px, transparent 1.5px),
+           radial-gradient(${rgba("#ffd7a6", 0.5)} 1.2px, transparent 1.6px)`,
+        backgroundSize: "16px 12px, 22px 16px",
+        backgroundBlendMode: "screen",
+      };
     default:
       return { background: base };
   }
@@ -758,7 +772,7 @@ function WallPlanner({ state, dispatch }) {
                   </div>
                 </div>
 
-                {/* Responsive grid: up to 12 columns on desktop (capped), with readable min cell size */}
+                {/* Responsive grid: up to 12 columns (capped), with readable min cell size */}
                 <div
                   className="grid gap-2"
                   style={{ gridTemplateColumns: `repeat(${cols}, minmax(72px, 1fr))` }}
@@ -802,8 +816,8 @@ function WallPlanner({ state, dispatch }) {
         </Section>
       ))}
 
-      {/* Draggable list stays as you already updated it */}
       <Section title="Draggable polishes" subtitle="Drag a card onto a slot to place it on a shelf">
+        {/* Up to 12 columns on very wide screens */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-12 gap-3">
           {state.polishes.map((p) => (
             <div
@@ -813,8 +827,14 @@ function WallPlanner({ state, dispatch }) {
               className="p-2 rounded-xl bg-white dark:bg-zinc-900 ring-1 ring-black/5 dark:ring-white/10 cursor-grab active:cursor-grabbing"
               title="Drag to place"
             >
+              {/* Make the card a fixed height; grid rows give 1/3 swatch + 2/3 text */}
               <div className="grid grid-rows-[1fr_2fr] h-28 sm:h-32 gap-1">
-                <div className="w-full rounded-md" style={finishStyle(p.colorHex || "#ddd", p.finish)} />
+                {/* 1/3 height swatch with finish effect */}
+                <div
+                  className="w-full rounded-md"
+                  style={finishStyle(p.colorHex || "#ddd", p.finish)}
+                />
+                {/* 2/3 height text */}
                 <div className="min-h-0 flex flex-col">
                   <div className="text-xs font-medium truncate">{p.brand || "—"}</div>
                   <div className="text-[11px] opacity-70 truncate">{p.name}</div>
@@ -901,7 +921,12 @@ function SelectMulti({ label, options, values, onChange }) {
         {filtered.map((o) => {
           const active = values.includes(o.value);
           return (
-            <button key={o.value} type="button" onClick={() => onChange(active ? values.filter((v) => v !== o.value) : [...values, o.value])} className={`w-full text-left px-3 py-2 text-sm hover:bg-black/5 dark:hover:bg:white/5 ${active ? "bg-fuchsia-50/60 dark:bg-fuchsia-500/10" : ""}`}>
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => onChange(active ? values.filter((v) => v !== o.value) : [...values, o.value])}
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/5 ${active ? "bg-fuchsia-50/60 dark:bg-fuchsia-500/10" : ""}`}
+            >
               {o.label}
             </button>
           );
@@ -1231,17 +1256,18 @@ export default function App() {
   }, []);
 
   return (
-  <div className="min-h-screen bg-gradient-to-b from-fuchsia-50 via-pink-50 to-rose-50 dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-950 text-zinc-900 dark:text-zinc-100">
-    <Header tab={tab} setTab={setTab} />
-    {/* Wider container for desktop so 12 cols fit comfortably */}
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 grid gap-4">
-      {tab === "inventory" && <Inventory state={state} dispatch={dispatch} />}
-      {tab === "wall" && <WallPlanner state={state} dispatch={dispatch} />}
-      {tab === "manis" && <ManicuresView state={state} dispatch={dispatch} />}
-      {tab === "tools" && <ToolsView state={state} dispatch={dispatch} />}
-      {tab === "stats" && <StatsView state={state} />}
-      {tab === "backup" && <BackupView state={state} dispatch={dispatch} />}
-    </main>
-    <Footer />
-  </div>
-);
+    <div className="min-h-screen bg-gradient-to-b from-fuchsia-50 via-pink-50 to-rose-50 dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <Header tab={tab} setTab={setTab} />
+      {/* Wider container for desktop so 12 cols fit comfortably */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 grid gap-4">
+        {tab === "inventory" && <Inventory state={state} dispatch={dispatch} />}
+        {tab === "wall" && <WallPlanner state={state} dispatch={dispatch} />}
+        {tab === "manis" && <ManicuresView state={state} dispatch={dispatch} />}
+        {tab === "tools" && <ToolsView state={state} dispatch={dispatch} />}
+        {tab === "stats" && <StatsView state={state} />}
+        {tab === "backup" && <BackupView state={state} dispatch={dispatch} />}
+      </main>
+      <Footer />
+    </div>
+  );
+}
